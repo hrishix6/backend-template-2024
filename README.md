@@ -96,3 +96,7 @@ $ docker compose up --build
 - Redis server will be accessible at `localhost:6379`
 
 - As database and cache are accessible in docker network and localhost , during development you can switch hostname to localhost and run.
+
+## License
+
+MIT
