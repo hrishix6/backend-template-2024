@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres
+    container_name: app-db
+    restart: always
+    ports:
+      - '5432:5432'
+    env_file:
+      - integrations.env
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./src/database/schema.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - my-app-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    depends_on:
+      - db
+    container_name: app-db-ui
+    restart: always
+    ports:
+      - '8888:80'
+    env_file:
+      - integrations.env
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - my-app-network
+
+  cache:
+    image: redis
+    container_name: app-cache
+    restart: always
+    build:
+      dockerfile: Dockerfile.redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - cache:/data
+    networks:
+      - my-app-network
+
+  cache_ui:
+    image: ghcr.io/joeferner/redis-commander:latest
+    container_name: app-cache-ui
+    depends_on:
+      - cache
+    restart: always
+    ports:
+      - '8080:8080'
+    env_file:
+      - integrations.env
+    networks:
+      - my-app-network
+
+  app:
+    image: app-img
+    container_name: app
+    depends_on:
+      - db
+      - cache
+    restart: always
+    build:
+      dockerfile: Dockerfile.server
+    ports:
+      - '5000:5000'
+    env_file:
+      - .env
+    networks:
+      - my-app-network
+
+volumes:
+  db_data:
+  pgadmin_data:
+  cache:
+    driver: local
+
+networks:
+  my-app-network:
+    driver: bridge
